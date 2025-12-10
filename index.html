@@ -79,11 +79,11 @@
     <div style="padding:10px 0; font-size:14px; line-height:1.4;">
         <p><strong>Tips for reporting bugs:</strong></p>
         <ul>
-            <li>Describe what you expected to happen vs what actually happened.</li>
+            <li>When do I report?: Whenever something goes wrong, feels off, or could be improved.</li>
             <li>Mention the location/level/scene where it occurred.</li>
-            <li>Include steps to reproduce the bug.</li>
-            <li>List your platform (Windows/Mac/etc.), controller, or settings if relevant.</li>
-            <li>Attach screenshots or videos if possible (not supported yet on this form).</li>
+            <li>If you are reporting a bug, please try to include steps to reproduce the bug.</li>
+            <li>If you are reporting something that looks or feels strange, describe what it should be like.</li>
+            <li>If you are reporting something unfun, tell us why it isn't and how we could make it better.</li>
         </ul>
     </div>
 </details>
@@ -92,9 +92,9 @@
             <label for="issueType">Type of Issue</label>
             <select id="issueType" required>
                 <option value="">-- Select Issue Type --</option>
-                <option value="bug">Bug</option>
-                <option value="feedback">Feedback</option>
-                <option value="suggestion">Suggestion</option>
+                <option value="bug">Something went wrong</option>
+                <option value="feedback">Something looks/feels weird</option>
+                <option value="suggestion">Something was unfun</option>
                 <option value="other">Other</option>
             </select>
 
@@ -116,7 +116,7 @@
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAJR5imy8_H6RcCyDcr_vtIzsE-ul9PEgRFfutAv8EtIlot-1PTN-sc3PJL4TWmjL3/exec"; 
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwWSvqmE1s7vdI0co0Qhx_radGkEyo6AVwfcfdlK5kxqEVNsbEiqjGg7oM8n508OSEs/exec"; 
 
         document.getElementById("reportForm").addEventListener("submit", async function(e) {
         e.preventDefault();
@@ -141,7 +141,17 @@
             mode: "cors" // Apps Script endpoint supports CORS for deployed web apps
             });
 
-            const json = await resp.json();
+            const text = await resp.text();
+            console.log("Raw response:", text);
+
+            let json;
+            try {
+                json = JSON.parse(text);
+            } catch (e) {
+                console.error("Response is not JSON!");
+                alert("Server returned an invalid response.");
+                return;
+            }
             if (resp.ok && json && json.success) {
             document.getElementById("successMessage").style.display = "block";
             this.reset();

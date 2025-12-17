@@ -38,6 +38,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 14px;
+            box-sizing: border-box;
         }
         textarea {
             resize: vertical;
@@ -57,6 +58,10 @@
         button:hover {
             background: #0052cc;
         }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
         .success-message {
             display: none;
             margin-top: 20px;
@@ -64,6 +69,15 @@
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
+            border-radius: 5px;
+        }
+        .error-message {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
             border-radius: 5px;
         }
     </style>
@@ -75,20 +89,20 @@
 
     <div class="container">
         <details style="margin-bottom:20px;">
-    <summary style="cursor:pointer; font-weight:bold; font-size:16px;">How to Write a Helpful Bug Report</summary>
-    <div style="padding:10px 0; font-size:14px; line-height:1.4;">
-        <p><strong>Tips for reporting bugs:</strong></p>
-        <ul>
-            <li>When do I report?: Whenever something goes wrong, feels off, or could be improved.</li>
-            <li>Mention the location/level/scene where it occurred.</li>
-            <li>If you are reporting a bug, please try to include steps to reproduce the bug.</li>
-            <li>If you are reporting something that looks or feels strange, describe what it should be like.</li>
-            <li>If you are reporting something unfun, tell us why it isn't and how we could make it better.</li>
-        </ul>
-    </div>
-</details>
+            <summary style="cursor:pointer; font-weight:bold; font-size:16px;">How to Write a Helpful Bug Report</summary>
+            <div style="padding:10px 0; font-size:14px; line-height:1.4;">
+                <p><strong>Tips for reporting bugs:</strong></p>
+                <ul>
+                    <li>When do I report?: Whenever something goes wrong, feels off, or could be improved.</li>
+                    <li>Mention the location/level/scene where it occurred.</li>
+                    <li>If you are reporting a bug, please try to include steps to reproduce the bug.</li>
+                    <li>If you are reporting something that looks or feels strange, describe what it should be like.</li>
+                    <li>If you are reporting something unfun, tell us why it isn't and how we could make it better.</li>
+                </ul>
+            </div>
+        </details>
 
-<form id="reportForm">
+        <form id="reportForm">
             <label for="issueType">Type of Issue</label>
             <select id="issueType" required>
                 <option value="">-- Select Issue Type --</option>
@@ -107,11 +121,15 @@
             <label for="contact">Contact (Optional)</label>
             <input type="text" id="contact" placeholder="Email or Discord (optional)" />
 
-            <button type="submit">Submit Report</button>
+            <button type="submit" id="submitBtn">Submit Report</button>
         </form>
 
         <div id="successMessage" class="success-message">
             Thank you! Your report has been submitted.
+        </div>
+        
+        <div id="errorMessage" class="error-message">
+            There was an error submitting your report. Please try again.
         </div>
     </div>
 
@@ -119,53 +137,63 @@
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwWSvqmE1s7vdI0co0Qhx_radGkEyo6AVwfcfdlK5kxqEVNsbEiqjGg7oM8n508OSEs/exec"; 
 
         document.getElementById("reportForm").addEventListener("submit", async function(e) {
-        e.preventDefault();
+            e.preventDefault();
 
-        const issueType = document.getElementById("issueType").value;
-        const title = document.getElementById("title").value.trim();
-        const details = document.getElementById("details").value.trim();
-        const contact = document.getElementById("contact").value.trim();
+            const submitBtn = document.getElementById("submitBtn");
+            const successMsg = document.getElementById("successMessage");
+            const errorMsg = document.getElementById("errorMessage");
+            
+            // Hide previous messages
+            successMsg.style.display = "none";
+            errorMsg.style.display = "none";
+            
+            // Disable button during submission
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Submitting...";
 
-        const body = {
-            type: issueType,
-            title: title,
-            details: details,
-            contact: contact
-        };
+            const issueType = document.getElementById("issueType").value;
+            const title = document.getElementById("title").value.trim();
+            const details = document.getElementById("details").value.trim();
+            const contact = document.getElementById("contact").value.trim();
 
-        try {
-            const resp = await fetch(APPS_SCRIPT_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: {
-                "Content-Type": "application/json",
-                },
-                body: JSON.stringify(formData)
-            }
-            );
+            const formData = {
+                type: issueType,
+                title: title,
+                details: details,
+                contact: contact
+            };
 
-            const text = await resp.text();
-            console.log("Raw response:", text);
-
-            let json;
             try {
-                json = JSON.parse(text);
-            } catch (e) {
-                console.error("Response is not JSON!");
-                alert("Server returned an invalid response.");
-                return;
+                const resp = await fetch(APPS_SCRIPT_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const text = await resp.text();
+                console.log("Response:", text);
+
+                // Check if submission was successful
+                if (resp.ok) {
+                    successMsg.style.display = "block";
+                    this.reset();
+                    
+                    // Scroll to success message
+                    successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    errorMsg.style.display = "block";
+                    console.error("Bad response:", resp.status);
+                }
+            } catch (err) {
+                errorMsg.style.display = "block";
+                console.error("Error:", err);
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Submit Report";
             }
-            if (resp.ok && json && json.success) {
-            document.getElementById("successMessage").style.display = "block";
-            this.reset();
-            } else {
-            alert("There was an error submitting the report. Try again.");
-            console.error("Bad response:", resp.status, json);
-            }
-        } catch (err) {
-            alert("Could not send report — check console for details.");
-            console.error(err);
-        }
         });
     </script>
 </body>

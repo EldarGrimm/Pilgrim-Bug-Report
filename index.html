@@ -164,28 +164,22 @@
             };
 
             try {
-                const resp = await fetch(APPS_SCRIPT_URL, {
+                // Using no-cors mode for Google Apps Script
+                // Remove Content-Type header to avoid preflight request
+                await fetch(APPS_SCRIPT_URL, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
+                    mode: "no-cors",
                     body: JSON.stringify(formData)
                 });
 
-                const text = await resp.text();
-                console.log("Response:", text);
-
-                // Check if submission was successful
-                if (resp.ok) {
-                    successMsg.style.display = "block";
-                    this.reset();
-                    
-                    // Scroll to success message
-                    successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                } else {
-                    errorMsg.style.display = "block";
-                    console.error("Bad response:", resp.status);
-                }
+                // With no-cors, we can't read the response, so we assume success
+                // Check your Google Sheet to verify submissions are working
+                successMsg.style.display = "block";
+                this.reset();
+                
+                // Scroll to success message
+                successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
             } catch (err) {
                 errorMsg.style.display = "block";
                 console.error("Error:", err);
